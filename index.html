@@ -1,27 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>HDB Resale Price Dashboard</title>
+  <meta charset="UTF-8" />
+  <title>HDB Resale Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f8ff;
-      text-align: center;
-      padding: 2rem;
+      font-family: sans-serif;
+      background-color: #f0f8ff;
+      margin: 0;
+      padding: 0;
     }
-    img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    iframe {
+      width: 100%;
+      height: 100vh;
+      border: none;
     }
   </style>
 </head>
 <body>
-  <h1>🏘️ Median HDB Resale Price by Town</h1>
-  <p>Based on live data from <a href="https://data.gov.sg">data.gov.sg</a></p>
-  <img src="chart/median_resale_prices_YYYY-MM-DD.png" alt="HDB resale price chart" />
+  <iframe src="chart/resale_chart.html"></iframe>
 </body>
 </html>

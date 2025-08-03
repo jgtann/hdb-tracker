@@ -1,55 +1,55 @@
-import pandas as pd
-import matplotlib.pyplot as plt
+# hdb_plot_dynamic.py
+
 import requests
+import pandas as pd
+import plotly.express as px
 import datetime
-import time
 import os
 
-# Create output directory if not exists
-output_dir = "chart"
-os.makedirs(output_dir, exist_ok=True)
-
-resource_id = "83b2fc37-ce8c-4df4-968b-370fd818138b"
-api_base = "https://data.gov.sg/api/action/datastore_search"
-
+# Prepare
+API = "https://data.gov.sg/api/action/datastore_search"
+RESOURCE_ID = "83b2fc37-ce8c-4df4-968b-370fd818138b"
+BATCH_SIZE = 10000
 all_records = []
 offset = 0
-batch_size = 10000
 
-print("🔄 Fetching HDB resale records...")
+print("🔄 Fetching data from data.gov.sg...")
 
 while True:
-    url = f"{api_base}?resource_id={resource_id}&limit={batch_size}&offset={offset}"
+    url = f"{API}?resource_id={RESOURCE_ID}&limit={BATCH_SIZE}&offset={offset}"
     res = requests.get(url)
     res.raise_for_status()
-    result = res.json()["result"]
-    
-    records = result["records"]
+    records = res.json()["result"]["records"]
     if not records:
         break
-
     all_records.extend(records)
-    print(f"✅ Fetched {len(records)} records (offset: {offset})")
-    offset += batch_size
-    time.sleep(0.5)
+    print(f"✅ Retrieved {len(records)} records (offset {offset})")
+    offset += BATCH_SIZE
 
-print(f"📦 Total records fetched: {len(all_records)}")
-
+# Prepare DataFrame
 df = pd.DataFrame(all_records)
 df["resale_price"] = pd.to_numeric(df["resale_price"], errors="coerce")
-df = df.dropna(subset=["town", "resale_price"])
+df = df.dropna(subset=["town", "resale_price", "month"])
 df = df[df["resale_price"] > 100000]
+df["month"] = pd.to_datetime(df["month"])
 
-# Plot
-median_prices = df.groupby("town")["resale_price"].median().sort_values()
-plt.figure(figsize=(10, 6))
-median_prices.plot(kind="barh", color="skyblue")
-plt.title("🏘️ Median HDB Resale Price by Town")
-plt.xlabel("SGD")
-plt.tight_layout()
+# Compute medians
+latest_month = df["month"].max().strftime("%Y-%m")
+earliest_month = df["month"].min().strftime("%Y-%m")
+summary = df.groupby("town")["resale_price"].median().sort_values()
 
-# Save
-today = datetime.date.today()
-filename = f"{output_dir}/median_resale_prices_{today}.png"
-plt.savefig(filename)
-print(f"✅ Chart saved to: {filename}")
+# Create dynamic chart
+fig = px.bar(
+    summary,
+    orientation='h',
+    labels={"value": "Median Resale Price (SGD)", "town": "Town"},
+    title=f"🏘️ Median HDB Resale Price by Town<br><sup>Data from {earliest_month} to {latest_month}</sup>",
+    template="plotly_white"
+)
+fig.update_layout(height=800)
+
+# Save chart
+os.makedirs("chart", exist_ok=True)
+output_path = os.path.join("chart", "resale_chart.html")
+fig.write_html(output_path, include_plotlyjs="cdn")
+print(f"📊 Chart saved to: {output_path}")
